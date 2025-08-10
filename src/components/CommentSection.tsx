@@ -19,20 +19,28 @@ interface Comment {
 interface CommentSectionProps {
   postId: string;
   initialComments?: Comment[];
+  alwaysShow?: boolean;
 }
 
-export default function CommentSection({ postId, initialComments = [] }: CommentSectionProps) {
+export default function CommentSection({ postId, initialComments = [], alwaysShow = false }: CommentSectionProps) {
   const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>(initialComments);
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(alwaysShow);
 
   useEffect(() => {
     if (showComments && comments.length === 0) {
       loadComments();
     }
   }, [showComments]);
+
+  // Load comments immediately if alwaysShow is true
+  useEffect(() => {
+    if (alwaysShow) {
+      loadComments();
+    }
+  }, [alwaysShow]);
 
   const loadComments = async () => {
     try {
@@ -106,22 +114,24 @@ export default function CommentSection({ postId, initialComments = [] }: Comment
 
   return (
     <div className="space-y-3">
-      {/* Comment Toggle Button */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setShowComments(!showComments)}
-        className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
-      >
-        <MessageCircle className="h-4 w-4" />
-        {comments.length > 0 ? `${comments.length} comment${comments.length !== 1 ? 's' : ''}` : 'Add comment'}
-      </Button>
+      {/* Comment Toggle Button - Only show if not alwaysShow */}
+      {!alwaysShow && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowComments(!showComments)}
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+        >
+          <MessageCircle className="h-4 w-4" />
+          {comments.length > 0 ? `${comments.length} comment${comments.length !== 1 ? 's' : ''}` : 'Add comment'}
+        </Button>
+      )}
 
-      {showComments && (
-        <div className="space-y-4">
+      {(showComments || alwaysShow) && (
+        <div className={`space-y-4 ${alwaysShow ? 'h-full flex flex-col' : ''}`}>
           {/* Add Comment Form */}
           {user && (
-            <form onSubmit={handleSubmitComment} className="flex gap-2">
+            <form onSubmit={handleSubmitComment} className="flex gap-2 p-4 border-b">
               <Avatar className="h-8 w-8">
                 <AvatarImage src={user.photoURL || ''} />
                 <AvatarFallback className="text-xs">
@@ -148,7 +158,7 @@ export default function CommentSection({ postId, initialComments = [] }: Comment
           )}
 
           {/* Comments List */}
-          <div className="space-y-3">
+          <div className={`space-y-3 ${alwaysShow ? 'flex-1 overflow-y-auto p-4' : ''}`}>
             {comments.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">
                 No comments yet. Be the first to comment!

@@ -1,0 +1,22 @@
+{
+  "name": "Vistagram",
+  "short_name": "Vistagram",
+  "description": "Capture and share Point of Interest photos with captions. Browse a beautiful AI‑seeded timeline.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#8B5CF6",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "32x32",
+      "type": "image/x-icon"
+    }
+  ]
+}

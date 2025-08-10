@@ -173,35 +173,27 @@ export default function VistaPostCardDraggable({ post, onDelete, currentUserId }
     }
   };
 
-  // Handle image URL - support both imported assets and actual URLs
-  const getImageUrl = (imageUrl: string) => {
-    if (!imageUrl) return '';
-    // For imported assets in Vite, the import returns the processed URL directly
-    // So we can just return the imageUrl as is
-    return imageUrl;
-  };
+
 
   return (
     <DraggableCardContainer>
       <DraggableCardBody className="bg-white dark:bg-neutral-800 p-0">
         {/* Image */}
         <div className="relative h-64 w-full overflow-hidden bg-gray-100">
-          {post.image ? (
-            <img
-              src={getImageUrl(post.image)}
-              alt={post.caption}
-              className="h-full w-full object-cover"
-              onError={(e) => {
-                console.error('Failed to load image:', post.image);
-                // Show a placeholder instead of hiding the image
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.nextElementSibling?.classList.remove('hidden');
-              }}
-            />
-          ) : null}
+          <img
+            src={post.image}
+            alt={post.caption}
+            className="h-full w-full object-cover"
+            onError={(e) => {
+              console.error('Failed to load image:', post.image);
+              // Show a placeholder instead of hiding the image
+              e.currentTarget.style.display = 'none';
+              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+            }}
+          />
           
-          {/* Fallback placeholder if image fails to load or doesn't exist */}
-          <div className={`absolute inset-0 flex items-center justify-center bg-gray-100 ${post.image ? 'hidden' : ''}`}>
+          {/* Fallback placeholder if image fails to load */}
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 hidden">
             <div className="text-center text-gray-400">
               <div className="w-16 h-16 mx-auto mb-2 bg-gray-200 rounded-lg flex items-center justify-center">
                 <span className="text-2xl">📸</span>

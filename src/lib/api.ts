@@ -1,6 +1,20 @@
 // API base URL
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
+// Helper function to ensure proper URL construction
+const ensureFullUrl = (url: string) => {
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  if (url.startsWith('://')) {
+    return `http${url}`;
+  }
+  if (url.startsWith('/')) {
+    return `${API_BASE_URL}${url}`;
+  }
+  return `${API_BASE_URL}/${url}`;
+};
+
 // Photo upload function
 export const uploadPhoto = async (
   file: File, 
@@ -34,7 +48,7 @@ export const uploadPhoto = async (
     
     if (result.success) {
       return {
-        url: `${API_BASE_URL}${result.url}`,
+        url: ensureFullUrl(result.url),
         id: result.photoId
       };
     }
@@ -49,11 +63,13 @@ export const uploadPhoto = async (
 // Get user photos function
 export const getUserPhotos = async (userId: string): Promise<Array<{
   id: string;
+  postId: string | null;
   url: string;
   caption: string;
   location: string;
   createdAt: Date;
   filename: string;
+  likes: number;
 }>> => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/photos/user/${userId}`);
@@ -67,6 +83,7 @@ export const getUserPhotos = async (userId: string): Promise<Array<{
     // Convert string dates back to Date objects
     return photos.map((photo: any) => ({
       ...photo,
+      url: ensureFullUrl(photo.url),
       createdAt: new Date(photo.createdAt)
     }));
   } catch (error) {
@@ -159,7 +176,7 @@ export const getUserPosts = async (userId: string): Promise<Array<{
     
     // Convert string dates back to Date objects and add full URLs
     return posts.map((post: any) => {
-      const fullPhotoUrl = `${API_BASE_URL}${post.photoUrl}`;
+      const fullPhotoUrl = ensureFullUrl(post.photoUrl);
       console.log('Generated photo URL:', fullPhotoUrl); // Debug log
       
       return {
@@ -353,7 +370,7 @@ export const getUserLikedPosts = async (userId: string): Promise<Array<{
     
     return posts.map((post: any) => ({
       id: post._id.toString(),
-      photoUrl: `${API_BASE_URL}${post.photoUrl}`,
+      photoUrl: ensureFullUrl(post.photoUrl),
       caption: post.caption,
       location: post.location,
       createdAt: new Date(post.createdAt),

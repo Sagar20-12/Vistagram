@@ -271,7 +271,7 @@ export default function Profile() {
                   <ProfileEditDialog
                     currentProfile={profileData}
                     onSave={(newProfile) => {
-                      setProfileData(newProfile);
+                      setProfileData({...profileData, ...newProfile});
                       console.log('Profile updated:', newProfile);
                     }}
                     trigger={
@@ -405,7 +405,6 @@ export default function Profile() {
                               key={post.id} 
                               post={{
                                 id: post.id,
-                                username: `@${user?.displayName?.toLowerCase().replace(/\s+/g, '.')}`,
                                 author: user?.displayName || 'Vistagram User',
                                 location: post.location,
                                 image: post.photoUrl,
@@ -428,7 +427,6 @@ export default function Profile() {
                               key={post.id} 
                               post={{
                                 id: post.id,
-                                username: `@${user?.displayName?.toLowerCase().replace(/\s+/g, '.')}`,
                                 author: user?.displayName || 'Vistagram User',
                                 location: post.location,
                                 image: post.photoUrl,
@@ -493,7 +491,6 @@ export default function Profile() {
                           key={post.id} 
                           post={{
                             id: post.id,
-                            username: `@${post.author?.toLowerCase().replace(/\s+/g, '.')}`,
                             author: post.author || 'Unknown User',
                             location: post.location,
                             image: post.photoUrl,
@@ -555,7 +552,7 @@ export default function Profile() {
                            <ProfileEditDialog
                              currentProfile={profileData}
                              onSave={(newProfile) => {
-                               setProfileData(newProfile);
+                               setProfileData({...profileData, ...newProfile});
                                console.log('Profile updated:', newProfile);
                              }}
                              trigger={

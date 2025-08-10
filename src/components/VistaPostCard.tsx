@@ -72,15 +72,7 @@ export default function VistaPostCard({ post }: Props) {
     }
   };
 
-  // Handle image URL - if it's a relative URL, prepend the API base URL
-  const getImageUrl = (imageUrl: string) => {
-    if (imageUrl.startsWith('http')) {
-      return imageUrl;
-    }
-    // If it's a relative URL, prepend the API base URL
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-    return `${API_BASE_URL}${imageUrl}`;
-  };
+
 
   return (
     <article id={`post-${post.id}`} className="w-full">
@@ -99,7 +91,7 @@ export default function VistaPostCard({ post }: Props) {
         <CardContent className="p-0">
           <div className="relative">
             <img
-              src={getImageUrl(post.image)}
+              src={post.image}
               alt={`POI photo: ${post.caption} by ${post.username}`}
               loading="lazy"
               className="block w-full h-auto"
@@ -107,7 +99,10 @@ export default function VistaPostCard({ post }: Props) {
                 console.error('Failed to load image:', post.image);
                 // Show a placeholder instead of hiding the image
                 e.currentTarget.style.display = 'none';
-                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                const placeholder = e.currentTarget.nextElementSibling;
+                if (placeholder) {
+                  placeholder.classList.remove('hidden');
+                }
               }}
             />
             {/* Fallback placeholder if image fails to load */}
