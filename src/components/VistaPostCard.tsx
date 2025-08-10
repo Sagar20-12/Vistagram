@@ -21,7 +21,7 @@ export default function VistaPostCard({ post }: Props) {
   const onLike = () => {
     setLiked((v) => !v);
     setLikes((n) => (liked ? n - 1 : n + 1));
-    // TODO: Persist to Supabase when connected
+    // TODO: Persist to MongoDB when connected
   };
 
   const onShare = async () => {
@@ -34,7 +34,7 @@ export default function VistaPostCard({ post }: Props) {
       }
       setShares((n) => n + 1);
       toast.success("Post shared");
-      // TODO: Persist to Supabase when connected
+      // TODO: Persist to MongoDB when connected
     } catch (e) {
       toast.error("Share canceled");
     }

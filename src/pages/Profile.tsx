@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -31,13 +32,17 @@ import {
   List,
   Bookmark
 } from 'lucide-react';
-import { seedPosts } from '@/data/seedPosts';
 import VistaPostCardDraggable from '@/components/VistaPostCardDraggable';
+import PhotoGallery from '@/components/PhotoGallery';
+import CameraUploadDialog from '@/components/CameraUploadDialog';
+import { getUserPosts } from '@/lib/api';
 
 export default function Profile() {
   const { user, logout } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [userPosts, setUserPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState({
     displayName: user?.displayName || 'Vistagram User',
     bio: 'Passionate traveler and photographer. Capturing moments around the world 🌍',
@@ -48,20 +53,54 @@ export default function Profile() {
     theme: 'light'
   });
 
-  // Mock user stats
+  // User stats based on real data
   const userStats = {
-    posts: 24,
+    posts: userPosts.length,
     followers: 1247,
     following: 892,
-    likes: 15420
+    likes: userPosts.reduce((sum, post) => sum + post.likes, 0)
   };
 
-  // Filter posts for this user (mock data)
-  const userPosts = seedPosts.slice(0, 6).map(post => ({
-    ...post,
-    author: user?.displayName || 'Vistagram User',
-    location: profileData.location
-  }));
+  // Load user posts
+  const loadUserPosts = async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      const posts = await getUserPosts(user.uid);
+      setUserPosts(posts);
+    } catch (error) {
+      console.error('Failed to load user posts:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load posts when user changes
+  useEffect(() => {
+    if (user) {
+      loadUserPosts();
+    }
+  }, [user]);
+
+  // Listen for photo upload events to refresh posts
+  useEffect(() => {
+    const handlePhotoUploaded = () => {
+      loadUserPosts();
+    };
+
+    const handlePostUploaded = () => {
+      loadUserPosts();
+    };
+
+    window.addEventListener('photoUploaded', handlePhotoUploaded);
+    window.addEventListener('postUploaded', handlePostUploaded);
+    
+    return () => {
+      window.removeEventListener('photoUploaded', handlePhotoUploaded);
+      window.removeEventListener('postUploaded', handlePostUploaded);
+    };
+  }, []);
 
   const handleSaveProfile = () => {
     setIsEditing(false);
@@ -158,10 +197,7 @@ export default function Profile() {
 
                 {/* Quick Actions */}
                 <div className="space-y-3">
-                  <Button className="w-full" size="sm">
-                    <Camera className="h-4 w-4 mr-2" />
-                    New Post
-                  </Button>
+                  <CameraUploadDialog triggerLabel="New Post" />
                   <Button variant="outline" className="w-full" size="sm">
                     <Edit3 className="h-4 w-4 mr-2" />
                     Edit Profile
@@ -211,51 +247,117 @@ export default function Profile() {
 
           {/* Main Content */}
           <div className="lg:col-span-2">
-            <Tabs defaultValue="posts" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="posts">Posts</TabsTrigger>
-                <TabsTrigger value="liked">Liked</TabsTrigger>
-                <TabsTrigger value="saved">Saved</TabsTrigger>
-                <TabsTrigger value="settings">Settings</TabsTrigger>
-              </TabsList>
+                         <Tabs defaultValue="posts" className="w-full">
+               <TabsList className="grid w-full grid-cols-5">
+                 <TabsTrigger value="posts">Posts</TabsTrigger>
+                 <TabsTrigger value="photos">Photos</TabsTrigger>
+                 <TabsTrigger value="liked">Liked</TabsTrigger>
+                 <TabsTrigger value="saved">Saved</TabsTrigger>
+                 <TabsTrigger value="settings">Settings</TabsTrigger>
+               </TabsList>
 
-              <TabsContent value="posts" className="mt-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold">Your Posts</h3>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant={viewMode === 'grid' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setViewMode('grid')}
-                    >
-                      <Grid className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant={viewMode === 'list' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setViewMode('list')}
-                    >
-                      <List className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+                             <TabsContent value="posts" className="mt-6">
+                 <div className="flex items-center justify-between mb-6">
+                   <h3 className="text-lg font-semibold">Your Posts</h3>
+                   <div className="flex items-center gap-2">
+                     <Button
+                       variant={viewMode === 'grid' ? 'default' : 'outline'}
+                       size="sm"
+                       onClick={() => setViewMode('grid')}
+                     >
+                       <Grid className="h-4 w-4" />
+                     </Button>
+                     <Button
+                       variant={viewMode === 'list' ? 'default' : 'outline'}
+                       size="sm"
+                       onClick={() => setViewMode('list')}
+                     >
+                       <List className="h-4 w-4" />
+                     </Button>
+                   </div>
+                 </div>
 
-                {viewMode === 'grid' ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {userPosts.map((post) => (
-                      <VistaPostCardDraggable key={post.id} post={post} />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {userPosts.map((post) => (
-                      <VistaPostCardDraggable key={post.id} post={post} />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
+                 {loading ? (
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     {[...Array(4)].map((_, i) => (
+                       <Card key={i}>
+                         <CardContent className="p-4">
+                           <Skeleton className="h-48 w-full mb-4" />
+                           <Skeleton className="h-4 w-3/4 mb-2" />
+                           <Skeleton className="h-4 w-1/2" />
+                         </CardContent>
+                       </Card>
+                     ))}
+                   </div>
+                 ) : userPosts.length === 0 ? (
+                   <Card>
+                     <CardContent className="p-6">
+                       <div className="text-center">
+                         <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                           <span className="text-2xl">📸</span>
+                         </div>
+                         <h3 className="text-lg font-semibold mb-2">No Posts Yet</h3>
+                         <p className="text-muted-foreground mb-4">
+                           Start capturing and sharing your POI moments
+                         </p>
+                         <CameraUploadDialog triggerLabel="Create Your First Post" />
+                       </div>
+                     </CardContent>
+                   </Card>
+                 ) : (
+                   <>
+                     {viewMode === 'grid' ? (
+                                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {userPosts.map((post) => (
+                            <VistaPostCardDraggable 
+                              key={post.id} 
+                              post={{
+                                id: post.id,
+                                username: `@${user?.displayName?.toLowerCase().replace(/\s+/g, '.')}`,
+                                author: user?.displayName || 'Vistagram User',
+                                location: post.location,
+                                image: post.photoUrl,
+                                caption: post.caption,
+                                timestamp: post.createdAt.toISOString(),
+                                likes: post.likes,
+                                shares: post.shares,
+                                comments: post.comments,
+                                commentsList: post.commentsList
+                              }} 
+                            />
+                          ))}
+                        </div>
+                     ) : (
+                                               <div className="space-y-4">
+                          {userPosts.map((post) => (
+                            <VistaPostCardDraggable 
+                              key={post.id} 
+                              post={{
+                                id: post.id,
+                                username: `@${user?.displayName?.toLowerCase().replace(/\s+/g, '.')}`,
+                                author: user?.displayName || 'Vistagram User',
+                                location: post.location,
+                                image: post.photoUrl,
+                                caption: post.caption,
+                                timestamp: post.createdAt.toISOString(),
+                                likes: post.likes,
+                                shares: post.shares,
+                                comments: post.comments,
+                                commentsList: post.commentsList
+                              }} 
+                            />
+                          ))}
+                        </div>
+                     )}
+                   </>
+                 )}
+                              </TabsContent>
 
-              <TabsContent value="liked" className="mt-6">
+               <TabsContent value="photos" className="mt-6">
+                 <PhotoGallery />
+               </TabsContent>
+
+               <TabsContent value="liked" className="mt-6">
                 <Card>
                   <CardContent className="p-6">
                     <div className="text-center">

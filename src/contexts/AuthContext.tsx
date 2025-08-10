@@ -12,8 +12,10 @@ import { toast } from 'sonner';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  showLoginSuccess: boolean;
   signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  hideLoginSuccess: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,6 +31,7 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showLoginSuccess, setShowLoginSuccess] = useState(false);
 
   useEffect(() => {
     // Check if Firebase auth is available
@@ -58,7 +61,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const credential = GoogleAuthProvider.credentialFromResult(result);
       
       if (credential) {
-        toast.success(`Welcome, ${result.user.displayName}!`);
+        // Show success animation instead of toast
+        setShowLoginSuccess(true);
       }
     } catch (error: any) {
       console.error('Google sign-in error:', error);
@@ -86,11 +90,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const hideLoginSuccess = () => {
+    setShowLoginSuccess(false);
+  };
+
   const value = {
     user,
     loading,
+    showLoginSuccess,
     signInWithGoogle,
     logout,
+    hideLoginSuccess,
   };
 
   return (

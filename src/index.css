@@ -157,4 +157,67 @@ All colors MUST be HSL.
     background: radial-gradient(600px 300px at var(--px,50%) var(--py,30%), hsl(var(--brand-1) / 0.25), transparent 60%);
     pointer-events: none;
   }
+
+  /* Login Success Animation Styles */
+  @keyframes sparkle {
+    0%, 100% { 
+      transform: scale(1) rotate(0deg); 
+      opacity: 1; 
+    }
+    50% { 
+      transform: scale(1.2) rotate(180deg); 
+      opacity: 0.8; 
+    }
+  }
+
+  @keyframes bounce-in {
+    0% { 
+      transform: scale(0.3) translateY(-50px); 
+      opacity: 0; 
+    }
+    50% { 
+      transform: scale(1.05) translateY(0); 
+      opacity: 1; 
+    }
+    70% { 
+      transform: scale(0.9) translateY(0); 
+      opacity: 1; 
+    }
+    100% { 
+      transform: scale(1) translateY(0); 
+      opacity: 1; 
+    }
+  }
+
+  @keyframes slide-up {
+    0% { 
+      transform: translateY(20px); 
+      opacity: 0; 
+    }
+    100% { 
+      transform: translateY(0); 
+      opacity: 1; 
+    }
+  }
+
+  @keyframes progress-fill {
+    0% { width: 0%; }
+    100% { width: 100%; }
+  }
+
+  .animate-sparkle {
+    animation: sparkle 2s ease-in-out infinite;
+  }
+
+  .animate-bounce-in {
+    animation: bounce-in 0.6s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.5s ease-out;
+  }
+
+  .animate-progress-fill {
+    animation: progress-fill 2s ease-in-out;
+  }
 }

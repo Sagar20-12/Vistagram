@@ -1,8 +1,24 @@
-# Welcome to your Lovable project
+# Vistagram - Photo Sharing App
 
-## Project info
+A modern photo sharing application built with React, TypeScript, and MongoDB.
 
-**URL**: https://lovable.dev/projects/b015dbe9-b4f3-49ca-92e3-f0b2ff1abf14
+## Features
+
+- 📸 Photo upload and sharing
+- 🔐 User authentication with Firebase
+- 🎨 Modern UI with shadcn/ui components
+- 📱 Responsive design
+- 🗄️ MongoDB backend for data storage
+- ⚡ Fast development with Vite
+
+## Tech Stack
+
+- **Frontend**: React, TypeScript, Vite
+- **UI**: shadcn/ui, Tailwind CSS
+- **Backend**: Node.js, Express
+- **Database**: MongoDB
+- **Authentication**: Firebase
+- **File Upload**: Multer
 
 ## How can I edit this code?
 
@@ -32,8 +48,15 @@ cd <YOUR_PROJECT_NAME>
 # Step 3: Install the necessary dependencies.
 npm i
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+# Step 4: Set up environment variables
+cp env.example .env
+# Edit .env with your MongoDB connection string and other credentials
+
+# Step 5: Start the development server
+npm run dev:full  # Starts both frontend and backend
+# OR run separately:
+# npm run server  # Backend only
+# npm run dev     # Frontend only
 ```
 
 **Edit a file directly in GitHub**
@@ -50,15 +73,37 @@ npm run dev
 - Click on "New codespace" to launch a new Codespace environment.
 - Edit files directly within the Codespace and commit and push your changes once you're done.
 
-## What technologies are used for this project?
+## Quick Start
 
-This project is built with:
+1. **Set up MongoDB**:
+   - Create a free MongoDB Atlas account or install MongoDB locally
+   - Follow the setup guide in `MONGODB_SETUP.md`
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+2. **Configure Environment**:
+   - Copy `env.example` to `.env`
+   - Add your MongoDB connection string and Firebase credentials
+
+3. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
+
+4. **Start Development**:
+   ```bash
+   npm run dev:full
+   ```
+
+5. **Open Browser**:
+   - Frontend: http://localhost:5173
+   - Backend API: http://localhost:3001
+
+## API Endpoints
+
+- `POST /api/photos/upload` - Upload a new photo
+- `GET /api/photos/:id` - Get a photo by ID
+- `GET /api/photos/user/:userId` - Get all photos for a user
+- `DELETE /api/photos/:id` - Delete a photo
+- `GET /api/health` - Health check
 
 ## How can I deploy this project?
 

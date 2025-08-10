@@ -2,6 +2,7 @@ import { DraggableCardBody, DraggableCardContainer } from "./DraggableCard";
 import { Button } from "./ui/button";
 import { Heart, MessageCircle, Share2, MoreHorizontal } from "lucide-react";
 import { useState } from "react";
+import CommentSection from "./CommentSection";
 
 interface Post {
   id: string;
@@ -12,6 +13,13 @@ interface Post {
   timestamp: string;
   likes: number;
   comments: number;
+  commentsList?: Array<{
+    id: string;
+    userId: string;
+    username: string;
+    text: string;
+    createdAt: Date;
+  }>;
 }
 
 interface VistaPostCardDraggableProps {
@@ -54,6 +62,10 @@ export default function VistaPostCardDraggable({ post }: VistaPostCardDraggableP
             src={post.image}
             alt={post.caption}
             className="h-full w-full object-cover"
+            onError={(e) => {
+              console.error('Failed to load image:', post.image);
+              e.currentTarget.style.display = 'none';
+            }}
           />
         </div>
 
@@ -106,10 +118,13 @@ export default function VistaPostCardDraggable({ post }: VistaPostCardDraggableP
             </span>
           </div>
 
-          {/* Comments count */}
-          <p className="text-xs text-gray-500 mt-2">
-            View all {post.comments} comments
-          </p>
+          {/* Comments Section */}
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <CommentSection 
+              postId={post.id} 
+              initialComments={post.commentsList || []}
+            />
+          </div>
         </div>
       </DraggableCardBody>
     </DraggableCardContainer>
