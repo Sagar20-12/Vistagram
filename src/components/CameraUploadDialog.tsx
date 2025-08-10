@@ -12,12 +12,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import LoginModal from "./LoginModal";
 
 export default function CameraUploadDialog({
   triggerLabel = "Start Capturing",
 }: {
   triggerLabel?: string;
 }) {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const captionRef = useRef<HTMLTextAreaElement | null>(null);
@@ -38,10 +41,43 @@ export default function CameraUploadDialog({
     setOpen(false);
   };
 
+  if (!user) {
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button 
+            variant="hero" 
+            size="lg"
+            className="transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25 hover:bg-gradient-to-r hover:from-purple-600 hover:to-blue-600"
+          >
+            {triggerLabel}
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Authentication Required</DialogTitle>
+            <DialogDescription>
+              Please sign in to capture and share POI moments
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <LoginModal />
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="hero" size="lg">{triggerLabel}</Button>
+        <Button 
+          variant="hero" 
+          size="lg"
+          className="transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25 hover:bg-gradient-to-r hover:from-purple-600 hover:to-blue-600"
+        >
+          {triggerLabel}
+        </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>

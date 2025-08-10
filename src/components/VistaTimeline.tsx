@@ -1,4 +1,4 @@
-import VistaPostCard from "@/components/VistaPostCard";
+import VistaPostCardDraggable from "@/components/VistaPostCardDraggable";
 import { seedPosts } from "@/data/seedPosts";
 
 export default function VistaTimeline() {
@@ -7,15 +7,17 @@ export default function VistaTimeline() {
   );
 
   return (
-    <section id="timeline" className="container mx-auto py-14">
-      <header className="mb-8">
-        <h2 className="text-2xl md:text-3xl font-bold">Recent POI Posts</h2>
-        <p className="text-muted-foreground mt-1">AI-seeded sample timeline</p>
-      </header>
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {posts.map((p) => (
-          <VistaPostCard key={p.id} post={p} />
-        ))}
+    <section id="timeline" className="bg-white">
+      <div className="container mx-auto py-14">
+        <header className="mb-8">
+          <h2 className="text-2xl md:text-3xl font-bold">Recent POI Posts</h2>
+          <p className="text-muted-foreground mt-1">AI-seeded sample timeline</p>
+        </header>
+        <div className="flex flex-wrap justify-center gap-8">
+          {posts.slice(0, 4).map((p) => (
+            <VistaPostCardDraggable key={p.id} post={p} />
+          ))}
+        </div>
       </div>
     </section>
   );

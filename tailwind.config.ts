@@ -85,13 +85,18 @@ export default {
 					float: {
 						'0%, 100%': { transform: 'translateY(0)' },
 						'50%': { transform: 'translateY(-4px)' }
+					},
+					'spin-slow': {
+						'0%': { transform: 'rotate(0deg)' },
+						'100%': { transform: 'rotate(360deg)' }
 					}
 				},
 				animation: {
 					'accordion-down': 'accordion-down 0.2s ease-out',
 					'accordion-up': 'accordion-up 0.2s ease-out',
 					'gradient-slow': 'gradient 12s ease infinite',
-					float: 'float 6s ease-in-out infinite'
+					float: 'float 6s ease-in-out infinite',
+					'spin-slow': 'spin-slow 3s linear infinite'
 				}
 		}
 	},
