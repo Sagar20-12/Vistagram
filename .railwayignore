@@ -1,0 +1,15 @@
+# Ignore frontend build files for Railway (backend-only deployment)
+dist/
+build/
+.next/
+.nuxt/
+.vuepress/dist/
+.serverless/
+.fusebox/
+.dynamodb/
+.tern-port
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
