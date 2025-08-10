@@ -33,16 +33,18 @@ import {
   Bookmark
 } from 'lucide-react';
 import VistaPostCardDraggable from '@/components/VistaPostCardDraggable';
-import PhotoGallery from '@/components/PhotoGallery';
 import CameraUploadDialog from '@/components/CameraUploadDialog';
-import { getUserPosts, checkServerHealth } from '@/lib/api';
+import { getUserPosts, getUserLikedPosts, checkServerHealth } from '@/lib/api';
+import { toast } from 'sonner';
 
 export default function Profile() {
   const { user, logout } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [userPosts, setUserPosts] = useState<any[]>([]);
+  const [likedPosts, setLikedPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [likedLoading, setLikedLoading] = useState(false);
   const [profileData, setProfileData] = useState({
     displayName: user?.displayName || 'Vistagram User',
     bio: 'Passionate traveler and photographer. Capturing moments around the world 🌍',
@@ -76,6 +78,21 @@ export default function Profile() {
     }
   };
 
+  // Load user's liked posts
+  const loadLikedPosts = async () => {
+    if (!user) return;
+    
+    try {
+      setLikedLoading(true);
+      const posts = await getUserLikedPosts(user.uid);
+      setLikedPosts(posts);
+    } catch (error) {
+      console.error('Failed to load liked posts:', error);
+    } finally {
+      setLikedLoading(false);
+    }
+  };
+
   // Load posts when user changes
   useEffect(() => {
     if (user) {
@@ -88,6 +105,9 @@ export default function Profile() {
     const checkHealth = async () => {
       const isHealthy = await checkServerHealth();
       console.log('Server health check result:', isHealthy);
+      if (!isHealthy) {
+        toast.error('Server is not running. Please start the server to use all features.');
+      }
     };
     checkHealth();
   }, []);
@@ -119,6 +139,15 @@ export default function Profile() {
 
   const handleLogout = async () => {
     await logout();
+  };
+
+  const handleDeletePost = (postId: string) => {
+    setUserPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
+  };
+
+  const handleLikeUpdate = () => {
+    // Refresh liked posts when a post is liked/unliked
+    loadLikedPosts();
   };
 
   if (!user) {
@@ -256,14 +285,13 @@ export default function Profile() {
 
           {/* Main Content */}
           <div className="lg:col-span-2">
-                         <Tabs defaultValue="posts" className="w-full">
-               <TabsList className="grid w-full grid-cols-5">
-                 <TabsTrigger value="posts">Posts</TabsTrigger>
-                 <TabsTrigger value="photos">Photos</TabsTrigger>
-                 <TabsTrigger value="liked">Liked</TabsTrigger>
-                 <TabsTrigger value="saved">Saved</TabsTrigger>
-                 <TabsTrigger value="settings">Settings</TabsTrigger>
-               </TabsList>
+                                     <Tabs defaultValue="posts" className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="posts">Posts</TabsTrigger>
+                <TabsTrigger value="liked">Liked</TabsTrigger>
+                <TabsTrigger value="saved">Saved</TabsTrigger>
+                <TabsTrigger value="settings">Settings</TabsTrigger>
+              </TabsList>
 
                              <TabsContent value="posts" className="mt-6">
                  <div className="flex items-center justify-between mb-6">
@@ -332,7 +360,9 @@ export default function Profile() {
                                 shares: post.shares,
                                 comments: post.comments,
                                 commentsList: post.commentsList
-                              }} 
+                              }}
+                              onDelete={handleDeletePost}
+                              currentUserId={user?.uid}
                             />
                           ))}
                         </div>
@@ -353,32 +383,78 @@ export default function Profile() {
                                 shares: post.shares,
                                 comments: post.comments,
                                 commentsList: post.commentsList
-                              }} 
+                              }}
+                              onDelete={handleDeletePost}
+                              currentUserId={user?.uid}
                             />
                           ))}
                         </div>
                      )}
                    </>
                  )}
-                              </TabsContent>
+                                              </TabsContent>
 
-               <TabsContent value="photos" className="mt-6">
-                 <PhotoGallery />
-               </TabsContent>
+                <TabsContent value="liked" className="mt-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-semibold">Liked Posts</h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={loadLikedPosts}
+                      disabled={likedLoading}
+                    >
+                      Refresh
+                    </Button>
+                  </div>
 
-               <TabsContent value="liked" className="mt-6">
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="text-center">
-                      <Heart className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">No Liked Posts Yet</h3>
-                      <p className="text-muted-foreground">
-                        Posts you like will appear here
-                      </p>
+                  {likedLoading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {[...Array(4)].map((_, i) => (
+                        <Card key={i}>
+                          <CardContent className="p-4">
+                            <Skeleton className="h-48 w-full mb-4" />
+                            <Skeleton className="h-4 w-3/4 mb-2" />
+                            <Skeleton className="h-4 w-1/2" />
+                          </CardContent>
+                        </Card>
+                      ))}
                     </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                  ) : likedPosts.length === 0 ? (
+                    <Card>
+                      <CardContent className="p-6">
+                        <div className="text-center">
+                          <Heart className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+                          <h3 className="text-lg font-semibold mb-2">No Liked Posts Yet</h3>
+                          <p className="text-muted-foreground">
+                            Posts you like will appear here
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {likedPosts.map((post) => (
+                        <VistaPostCardDraggable 
+                          key={post.id} 
+                          post={{
+                            id: post.id,
+                            username: `@${post.author?.toLowerCase().replace(/\s+/g, '.')}`,
+                            author: post.author || 'Unknown User',
+                            location: post.location,
+                            image: post.photoUrl,
+                            caption: post.caption,
+                            timestamp: post.createdAt.toISOString(),
+                            likes: post.likes,
+                            shares: post.shares,
+                            comments: post.comments,
+                            commentsList: post.commentsList
+                          }}
+                          currentUserId={user?.uid}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
 
               <TabsContent value="saved" className="mt-6">
                 <Card>

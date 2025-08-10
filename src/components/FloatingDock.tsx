@@ -10,14 +10,21 @@ import {
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import LoginModal from "./LoginModal";
+import SearchDialog from "./SearchDialog";
+import MessagesDialog from "./MessagesDialog";
+import NotificationsDialog from "./NotificationsDialog";
 
 export default function FloatingDock() {
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [messagesOpen, setMessagesOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+
   const items = [
-    { title: "Home", icon: "🏠", href: "/" },
-    { title: "Search", icon: "🔍", href: "#" },
-    { title: "Messages", icon: "💬", href: "#" },
-    { title: "Notifications", icon: "🔔", href: "#" },
-    { title: "Profile", icon: "👤", href: "/profile" },
+    { title: "Home", icon: "🏠", href: "/", action: () => {} },
+    { title: "Search", icon: "🔍", href: "#", action: () => setSearchOpen(true) },
+    { title: "Messages", icon: "💬", href: "#", action: () => setMessagesOpen(true) },
+    { title: "Notifications", icon: "🔔", href: "#", action: () => setNotificationsOpen(true) },
+    { title: "Profile", icon: "👤", href: "/profile", action: () => {} },
   ];
 
   return (
@@ -27,6 +34,11 @@ export default function FloatingDock() {
       <div className="fixed top-4 right-4 z-50">
         <LoginModal />
       </div>
+      
+      {/* Dialogs */}
+      <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
+      <MessagesDialog open={messagesOpen} onOpenChange={setMessagesOpen} />
+      <NotificationsDialog open={notificationsOpen} onOpenChange={setNotificationsOpen} />
     </>
   );
 }
@@ -35,10 +47,18 @@ const FloatingDockMobile = ({
   items,
   className,
 }: {
-  items: { title: string; icon: string; href: string }[];
+  items: { title: string; icon: string; href: string; action: () => void }[];
   className?: string;
 }) => {
   const [open, setOpen] = useState(false);
+  
+  const handleItemClick = (item: { title: string; icon: string; href: string; action: () => void }) => {
+    if (item.href === "#") {
+      item.action();
+    }
+    setOpen(false);
+  };
+
   return (
     <div className={cn("fixed top-4 right-4 block md:hidden z-50", className)}>
       <AnimatePresence>
@@ -64,13 +84,21 @@ const FloatingDockMobile = ({
                 }}
                 transition={{ delay: (items.length - 1 - idx) * 0.05 }}
               >
-                                 <Link
-                   to={item.href}
-                   key={item.title}
-                   className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80 backdrop-blur-md shadow-lg border border-gray-200/50"
-                 >
-                   <div className="text-lg">{item.icon}</div>
-                 </Link>
+                {item.href === "#" ? (
+                  <button
+                    onClick={() => handleItemClick(item)}
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80 backdrop-blur-md shadow-lg border border-gray-200/50"
+                  >
+                    <div className="text-lg">{item.icon}</div>
+                  </button>
+                ) : (
+                  <Link
+                    to={item.href}
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80 backdrop-blur-md shadow-lg border border-gray-200/50"
+                  >
+                    <div className="text-lg">{item.icon}</div>
+                  </Link>
+                )}
               </motion.div>
             ))}
           </motion.div>
@@ -90,7 +118,7 @@ const FloatingDockDesktop = ({
   items,
   className,
 }: {
-  items: { title: string; icon: string; href: string }[];
+  items: { title: string; icon: string; href: string; action: () => void }[];
   className?: string;
 }) => {
   let mouseX = useMotionValue(Infinity);
@@ -115,11 +143,13 @@ function IconContainer({
   title,
   icon,
   href,
+  action,
 }: {
   mouseX: MotionValue;
   title: string;
   icon: string;
   href: string;
+  action: () => void;
 }) {
   let ref = useRef<HTMLDivElement>(null);
 
@@ -163,8 +193,17 @@ function IconContainer({
 
   const [hovered, setHovered] = useState(false);
 
+  const handleClick = () => {
+    if (href === "#") {
+      action();
+    }
+  };
+
+  const Container = href === "#" ? "button" : Link;
+  const containerProps = href === "#" ? { onClick: handleClick } : { to: href };
+
   return (
-    <Link to={href}>
+    <Container {...containerProps}>
       <motion.div
         ref={ref}
         style={{ width, height }}
@@ -198,7 +237,7 @@ function IconContainer({
         >
           {title}
         </motion.div>
-              </motion.div>
-      </Link>
-    );
+      </motion.div>
+    </Container>
+  );
 }

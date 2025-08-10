@@ -46,11 +46,26 @@ export default function CommentSection({ postId, initialComments = [] }: Comment
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user || !newComment.trim()) return;
+    if (!user) {
+      toast.error('Please sign in to comment');
+      return;
+    }
+    
+    if (!newComment.trim()) {
+      toast.error('Please enter a comment');
+      return;
+    }
 
     setIsSubmitting(true);
     
     try {
+      console.log('Submitting comment:', {
+        postId,
+        userId: user.uid,
+        username: user.displayName || 'Anonymous',
+        text: newComment
+      });
+
       const comment = await addComment(
         postId,
         user.uid,
@@ -63,11 +78,11 @@ export default function CommentSection({ postId, initialComments = [] }: Comment
         setNewComment('');
         toast.success('Comment added successfully!');
       } else {
-        toast.error('Failed to add comment');
+        toast.error('Failed to add comment. Please check if the server is running.');
       }
     } catch (error) {
       console.error('Failed to add comment:', error);
-      toast.error('Failed to add comment');
+      toast.error(`Failed to add comment: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsSubmitting(false);
     }

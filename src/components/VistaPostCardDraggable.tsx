@@ -1,8 +1,11 @@
 import { DraggableCardBody, DraggableCardContainer } from "./DraggableCard";
 import { Button } from "./ui/button";
-import { Heart, MessageCircle, Share2, MoreHorizontal } from "lucide-react";
-import { useState } from "react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import CommentSection from "./CommentSection";
+import { deletePost, toggleLike, checkUserLike } from "@/lib/api";
+import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Post {
   id: string;
@@ -24,19 +27,74 @@ interface Post {
 
 interface VistaPostCardDraggableProps {
   post: Post;
+  onDelete?: (postId: string) => void;
+  currentUserId?: string;
 }
 
-export default function VistaPostCardDraggable({ post }: VistaPostCardDraggableProps) {
+export default function VistaPostCardDraggable({ post, onDelete, currentUserId }: VistaPostCardDraggableProps) {
+  const { user } = useAuth();
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(post.likes);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isLiking, setIsLiking] = useState(false);
 
-  const handleLike = () => {
-    if (isLiked) {
-      setLikeCount(likeCount - 1);
-    } else {
-      setLikeCount(likeCount + 1);
+  // Check if user has liked this post on component mount
+  useEffect(() => {
+    if (user && post.id) {
+      checkUserLike(post.id, user.uid)
+        .then(liked => setIsLiked(liked))
+        .catch(error => console.error('Failed to check like status:', error));
     }
-    setIsLiked(!isLiked);
+  }, [user, post.id]);
+
+  const handleLike = async () => {
+    if (!user) {
+      toast.error('Please sign in to like posts');
+      return;
+    }
+
+    setIsLiking(true);
+    try {
+      const result = await toggleLike(post.id, user.uid);
+      setIsLiked(result.liked);
+      setLikeCount(result.likes);
+      
+      if (result.liked) {
+        toast.success('Post liked!');
+      } else {
+        toast.success('Post unliked');
+      }
+    } catch (error) {
+      console.error('Like error:', error);
+      toast.error(`Failed to ${isLiked ? 'unlike' : 'like'} post: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!currentUserId || !onDelete) return;
+    
+    if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+      return;
+    }
+    
+    setIsDeleting(true);
+    try {
+      console.log('Starting delete process for post:', post.id);
+      const success = await deletePost(post.id, currentUserId);
+      if (success) {
+        toast.success('Post deleted successfully');
+        onDelete(post.id);
+      } else {
+        toast.error('Failed to delete post. Please check if the server is running.');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error(`Failed to delete post: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const formatTimeAgo = (timestamp: string) => {
@@ -100,9 +158,22 @@ export default function VistaPostCardDraggable({ post }: VistaPostCardDraggableP
                 <p className="text-xs text-gray-500">{post.location}</p>
               </div>
             </div>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center space-x-1">
+              {onDelete && currentUserId && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           {/* Caption */}
@@ -114,14 +185,15 @@ export default function VistaPostCardDraggable({ post }: VistaPostCardDraggableP
           {/* Action Buttons */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLike}
-                className={`h-8 w-8 p-0 ${isLiked ? 'text-red-500' : 'text-gray-500'}`}
-              >
-                <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
-              </Button>
+                             <Button
+                 variant="ghost"
+                 size="sm"
+                 onClick={handleLike}
+                 disabled={isLiking}
+                 className={`h-8 w-8 p-0 ${isLiked ? 'text-red-500' : 'text-gray-500'}`}
+               >
+                 <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
+               </Button>
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-500">
                 <MessageCircle className="h-4 w-4" />
               </Button>

@@ -98,6 +98,38 @@ export const deletePhoto = async (photoId: string, userId: string): Promise<bool
   }
 };
 
+// Delete post function
+export const deletePost = async (postId: string, userId: string): Promise<boolean> => {
+  try {
+    console.log('Attempting to delete post:', postId, 'for user:', userId);
+    console.log('Delete URL:', `${API_BASE_URL}/api/posts/${postId}`);
+    
+    const response = await fetch(`${API_BASE_URL}/api/posts/${postId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId }),
+    });
+
+    console.log('Delete response status:', response.status);
+    console.log('Delete response status text:', response.statusText);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Delete response error:', errorText);
+      throw new Error(`Delete failed: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log('Delete response result:', result);
+    return result.success;
+  } catch (error) {
+    console.error('Post deletion failed:', error);
+    return false;
+  }
+};
+
 // Get user posts function
 export const getUserPosts = async (userId: string): Promise<Array<{
   id: string;
@@ -168,6 +200,9 @@ export const addComment = async (
   createdAt: Date;
 } | null> => {
   try {
+    console.log('Adding comment:', { postId, userId, username, text });
+    console.log('Comment URL:', `${API_BASE_URL}/api/posts/${postId}/comments`);
+    
     const response = await fetch(`${API_BASE_URL}/api/posts/${postId}/comments`, {
       method: 'POST',
       headers: {
@@ -176,11 +211,17 @@ export const addComment = async (
       body: JSON.stringify({ userId, username, text }),
     });
 
+    console.log('Comment response status:', response.status);
+    console.log('Comment response status text:', response.statusText);
+
     if (!response.ok) {
-      throw new Error(`Failed to add comment: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Comment response error:', errorText);
+      throw new Error(`Failed to add comment: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     const result = await response.json();
+    console.log('Comment response result:', result);
     
     if (result.success) {
       return {
@@ -195,7 +236,7 @@ export const addComment = async (
     return null;
   } catch (error) {
     console.error('Failed to add comment:', error);
-    return null;
+    throw error; // Re-throw to show the error in the UI
   }
 };
 
@@ -225,6 +266,111 @@ export const getComments = async (postId: string): Promise<Array<{
     }));
   } catch (error) {
     console.error('Failed to get comments:', error);
+    return [];
+  }
+};
+
+// Like/Unlike post function
+export const toggleLike = async (postId: string, userId: string): Promise<{ success: boolean; liked: boolean; likes: number }> => {
+  try {
+    console.log('Toggling like for post:', postId, 'user:', userId);
+    
+    const response = await fetch(`${API_BASE_URL}/api/posts/${postId}/like`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId }),
+    });
+
+    console.log('Like response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Like response error:', errorText);
+      throw new Error(`Failed to toggle like: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log('Like response result:', result);
+    return result;
+  } catch (error) {
+    console.error('Toggle like failed:', error);
+    throw error;
+  }
+};
+
+// Check if user has liked a post
+export const checkUserLike = async (postId: string, userId: string): Promise<boolean> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/posts/${postId}/like/check`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId }),
+    });
+
+    if (!response.ok) {
+      return false;
+    }
+
+    const result = await response.json();
+    return result.liked;
+  } catch (error) {
+    console.error('Check user like failed:', error);
+    return false;
+  }
+};
+
+// Get user's liked posts
+export const getUserLikedPosts = async (userId: string): Promise<Array<{
+  id: string;
+  photoUrl: string;
+  caption: string;
+  location: string;
+  createdAt: Date;
+  likes: number;
+  shares: number;
+  comments: number;
+  author: string;
+  commentsList: Array<{
+    id: string;
+    userId: string;
+    username: string;
+    text: string;
+    createdAt: Date;
+  }>;
+}>> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/users/${userId}/liked-posts`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to get liked posts: ${response.statusText}`);
+    }
+
+    const posts = await response.json();
+    
+    return posts.map((post: any) => ({
+      id: post._id.toString(),
+      photoUrl: `${API_BASE_URL}${post.photoUrl}`,
+      caption: post.caption,
+      location: post.location,
+      createdAt: new Date(post.createdAt),
+      likes: post.likes,
+      shares: post.shares,
+      comments: post.comments,
+      author: post.author || 'Unknown User',
+      commentsList: post.comments?.map((comment: any) => ({
+        id: comment.id,
+        userId: comment.userId,
+        username: comment.username,
+        text: comment.text,
+        createdAt: new Date(comment.createdAt)
+      })) || []
+    }));
+  } catch (error) {
+    console.error('Failed to get user liked posts:', error);
     return [];
   }
 };

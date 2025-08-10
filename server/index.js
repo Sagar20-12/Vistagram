@@ -239,18 +239,97 @@ app.get('/api/posts/user/:userId', async (req, res) => {
   }
 });
 
+// Delete post endpoint
+app.delete('/api/posts/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.body;
+    
+    console.log('Delete post request:', { id, userId });
+    
+    if (!ObjectId.isValid(id)) {
+      console.log('Invalid post ID:', id);
+      return res.status(400).json({ error: 'Invalid post ID' });
+    }
+    
+    if (!userId) {
+      console.log('Missing user ID');
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+    
+    const postsCollection = db.collection('posts');
+    const post = await postsCollection.findOne({
+      _id: new ObjectId(id),
+      userId
+    });
+    
+    console.log('Found post:', post ? 'yes' : 'no');
+    
+    if (!post) {
+      return res.status(404).json({ error: 'Post not found or unauthorized' });
+    }
+    
+    // Delete the post
+    const result = await postsCollection.deleteOne({
+      _id: new ObjectId(id),
+      userId
+    });
+    
+    console.log('Delete result:', result);
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Post not found or unauthorized' });
+    }
+    
+    // Delete associated photo if it exists
+    if (post.photoId) {
+      const photosCollection = db.collection('photos');
+      const photoDeleteResult = await photosCollection.deleteOne({
+        _id: new ObjectId(post.photoId),
+        userId
+      });
+      console.log('Photo delete result:', photoDeleteResult);
+    }
+    
+    // Delete associated comments
+    const commentsCollection = db.collection('comments');
+    const commentsDeleteResult = await commentsCollection.deleteMany({
+      postId: id
+    });
+    console.log('Comments delete result:', commentsDeleteResult);
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Delete post error:', error);
+    res.status(500).json({ error: 'Failed to delete post', details: error.message });
+  }
+});
+
 // Add comment endpoint
 app.post('/api/posts/:postId/comments', async (req, res) => {
   try {
     const { postId } = req.params;
     const { userId, username, text } = req.body;
     
+    console.log('Add comment request:', { postId, userId, username, text });
+    
     if (!userId || !text) {
+      console.log('Missing required fields:', { userId: !!userId, text: !!text });
       return res.status(400).json({ error: 'User ID and comment text are required' });
     }
     
     if (!ObjectId.isValid(postId)) {
+      console.log('Invalid post ID:', postId);
       return res.status(400).json({ error: 'Invalid post ID' });
+    }
+    
+    // Check if post exists
+    const postsCollection = db.collection('posts');
+    const post = await postsCollection.findOne({ _id: new ObjectId(postId) });
+    
+    if (!post) {
+      console.log('Post not found:', postId);
+      return res.status(404).json({ error: 'Post not found' });
     }
     
     const commentsCollection = db.collection('comments');
@@ -263,16 +342,17 @@ app.post('/api/posts/:postId/comments', async (req, res) => {
       updatedAt: new Date()
     };
     
+    console.log('Inserting comment:', commentDoc);
     const result = await commentsCollection.insertOne(commentDoc);
+    console.log('Comment inserted:', result.insertedId);
     
     // Update post comment count
-    const postsCollection = db.collection('posts');
     await postsCollection.updateOne(
       { _id: new ObjectId(postId) },
       { $inc: { comments: 1 } }
     );
     
-    res.json({
+    const response = {
       success: true,
       commentId: result.insertedId.toString(),
       comment: {
@@ -282,10 +362,13 @@ app.post('/api/posts/:postId/comments', async (req, res) => {
         text,
         createdAt: commentDoc.createdAt
       }
-    });
+    };
+    
+    console.log('Comment response:', response);
+    res.json(response);
   } catch (error) {
     console.error('Add comment error:', error);
-    res.status(500).json({ error: 'Failed to add comment' });
+    res.status(500).json({ error: 'Failed to add comment', details: error.message });
   }
 });
 
@@ -316,6 +399,162 @@ app.get('/api/posts/:postId/comments', async (req, res) => {
   } catch (error) {
     console.error('Get comments error:', error);
     res.status(500).json({ error: 'Failed to get comments' });
+  }
+});
+
+// Toggle like for a post
+app.post('/api/posts/:postId/like', async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { userId } = req.body;
+    
+    console.log('Toggle like request:', { postId, userId });
+    
+    if (!ObjectId.isValid(postId)) {
+      return res.status(400).json({ error: 'Invalid post ID' });
+    }
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+    
+    const likesCollection = db.collection('likes');
+    const postsCollection = db.collection('posts');
+    
+    // Check if user already liked the post
+    const existingLike = await likesCollection.findOne({
+      postId,
+      userId
+    });
+    
+    let liked = false;
+    let likes = 0;
+    
+    if (existingLike) {
+      // Unlike: remove the like
+      await likesCollection.deleteOne({
+        postId,
+        userId
+      });
+      
+      // Decrease like count
+      const result = await postsCollection.updateOne(
+        { _id: new ObjectId(postId) },
+        { $inc: { likes: -1 } }
+      );
+      
+      liked = false;
+    } else {
+      // Like: add the like
+      await likesCollection.insertOne({
+        postId,
+        userId,
+        createdAt: new Date()
+      });
+      
+      // Increase like count
+      const result = await postsCollection.updateOne(
+        { _id: new ObjectId(postId) },
+        { $inc: { likes: 1 } }
+      );
+      
+      liked = true;
+    }
+    
+    // Get updated like count
+    const post = await postsCollection.findOne({ _id: new ObjectId(postId) });
+    likes = post ? post.likes : 0;
+    
+    console.log('Like toggle result:', { liked, likes });
+    
+    res.json({
+      success: true,
+      liked,
+      likes
+    });
+  } catch (error) {
+    console.error('Toggle like error:', error);
+    res.status(500).json({ error: 'Failed to toggle like', details: error.message });
+  }
+});
+
+// Check if user has liked a post
+app.post('/api/posts/:postId/like/check', async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { userId } = req.body;
+    
+    if (!ObjectId.isValid(postId)) {
+      return res.status(400).json({ error: 'Invalid post ID' });
+    }
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+    
+    const likesCollection = db.collection('likes');
+    const existingLike = await likesCollection.findOne({
+      postId,
+      userId
+    });
+    
+    res.json({
+      liked: !!existingLike
+    });
+  } catch (error) {
+    console.error('Check like error:', error);
+    res.status(500).json({ error: 'Failed to check like' });
+  }
+});
+
+// Get user's liked posts
+app.get('/api/users/:userId/liked-posts', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const likesCollection = db.collection('likes');
+    const postsCollection = db.collection('posts');
+    const commentsCollection = db.collection('comments');
+    
+    // Get all posts that the user has liked
+    const likedPosts = await likesCollection
+      .find({ userId })
+      .sort({ createdAt: -1 })
+      .toArray();
+    
+    // Get the actual post data for each liked post
+    const postsWithComments = await Promise.all(
+      likedPosts.map(async (like) => {
+        const post = await postsCollection.findOne({ _id: new ObjectId(like.postId) });
+        
+        if (!post) return null;
+        
+        // Get comments for this post
+        const comments = await commentsCollection
+          .find({ postId: like.postId })
+          .sort({ createdAt: -1 })
+          .toArray();
+        
+        return {
+          ...post,
+          comments: comments.map(comment => ({
+            id: comment._id.toString(),
+            userId: comment.userId,
+            username: comment.username,
+            text: comment.text,
+            createdAt: comment.createdAt
+          }))
+        };
+      })
+    );
+    
+    // Filter out null posts and return
+    const validPosts = postsWithComments.filter(post => post !== null);
+    
+    res.json(validPosts);
+  } catch (error) {
+    console.error('Get liked posts error:', error);
+    res.status(500).json({ error: 'Failed to get liked posts' });
   }
 });
 
