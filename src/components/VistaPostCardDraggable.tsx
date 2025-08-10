@@ -111,15 +111,26 @@ export default function VistaPostCardDraggable({ post, onDelete, currentUserId }
     }
   };
 
+  // Handle image URL - if it's a relative URL, prepend the API base URL
+  const getImageUrl = (imageUrl: string) => {
+    if (!imageUrl) return '';
+    if (imageUrl.startsWith('http')) {
+      return imageUrl;
+    }
+    // If it's a relative URL, prepend the API base URL
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+    return `${API_BASE_URL}${imageUrl}`;
+  };
+
   return (
     <DraggableCardContainer>
       <DraggableCardBody className="bg-white dark:bg-neutral-800 p-0">
         {/* Image */}
         <div className="relative h-64 w-full overflow-hidden bg-gray-100">
-          {console.log('Rendering image with URL:', post.image)} {/* Debug log */}
+          {console.log('Rendering image with URL:', getImageUrl(post.image))} {/* Debug log */}
           {post.image ? (
             <img
-              src={post.image}
+              src={getImageUrl(post.image)}
               alt={post.caption}
               className="h-full w-full object-cover"
               onError={(e) => {
