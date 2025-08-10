@@ -58,6 +58,15 @@ const upload = multer({
   }
 });
 
+// Root endpoint for basic health check
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    message: 'Vistagram API Server is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   console.log('Health check requested');
@@ -774,16 +783,26 @@ app.get('/api/users/:userId/liked-posts', async (req, res) => {
 async function startServer() {
   try {
     console.log('🚀 Starting server...');
-    await connectToMongoDB();
     
+    // Start the server first
     app.listen(PORT, () => {
       console.log(`✅ Server running on port ${PORT}`);
-      console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+      console.log(`📊 Health check: http://localhost:${PORT}/`);
+      console.log(`📊 API Health check: http://localhost:${PORT}/api/health`);
       console.log(`🧪 Test endpoint: http://localhost:${PORT}/api/test/photos`);
       console.log('🔍 Server is ready to receive requests');
     });
+    
+    // Try to connect to MongoDB in the background
+    try {
+      await connectToMongoDB();
+    } catch (error) {
+      console.error('⚠️ MongoDB connection failed, but server is running:', error.message);
+      console.log('🔄 Server will continue running without database connection');
+    }
   } catch (error) {
     console.error('❌ Failed to start server:', error);
+    process.exit(1);
   }
 }
 
