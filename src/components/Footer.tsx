@@ -88,12 +88,20 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-center text-sm text-gray-600">
           <div className="flex items-center mb-4 md:mb-0">
             <Globe className="h-4 w-4 mr-2" />
-            <span>© 2024 Vistagram. All rights reserved.</span>
+            <span>© 2025 Vistagram. All rights reserved.</span>
           </div>
           <div className="flex items-center space-x-4">
             <span>Made with</span>
             <Heart className="h-4 w-4 text-red-500" />
-            <span>for travelers worldwide</span>
+            <span>for travelers worldwide by</span>
+            <a 
+              href="https://github.com/Sagar20-12" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-purple-600 hover:text-purple-800 transition-colors font-medium"
+            >
+              Sagar Singh Raghav
+            </a>
           </div>
         </div>
       </div>

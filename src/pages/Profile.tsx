@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import VistaPostCardDraggable from '@/components/VistaPostCardDraggable';
 import CameraUploadDialog from '@/components/CameraUploadDialog';
+import BioEditDialog from '@/components/BioEditDialog';
 import { getUserPosts, getUserLikedPosts, checkServerHealth } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -205,6 +206,28 @@ export default function Profile() {
                   </Avatar>
                   <h2 className="text-xl font-bold">{user.displayName}</h2>
                   <p className="text-muted-foreground">{user.email}</p>
+                  
+                  {/* Bio Section */}
+                  <div className="mt-3 mb-3">
+                    <div className="flex items-center justify-center gap-2">
+                      <p className="text-sm text-gray-600 max-w-xs line-clamp-2">
+                        {profileData.bio}
+                      </p>
+                      <BioEditDialog
+                        currentBio={profileData.bio}
+                        onSave={(newBio) => {
+                          setProfileData({...profileData, bio: newBio});
+                          console.log('Bio updated:', newBio);
+                        }}
+                        trigger={
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600">
+                            <Edit3 className="h-3 w-3" />
+                          </Button>
+                        }
+                      />
+                    </div>
+                  </div>
+                  
                   <Badge variant="secondary" className="mt-2">
                     <Globe className="h-3 w-3 mr-1" />
                     Public Profile
@@ -236,6 +259,19 @@ export default function Profile() {
                 {/* Quick Actions */}
                 <div className="space-y-3">
                   <CameraUploadDialog triggerLabel="New Post" />
+                  <BioEditDialog
+                    currentBio={profileData.bio}
+                    onSave={(newBio) => {
+                      setProfileData({...profileData, bio: newBio});
+                      console.log('Bio updated:', newBio);
+                    }}
+                    trigger={
+                      <Button variant="outline" className="w-full" size="sm">
+                        <Edit3 className="h-4 w-4 mr-2" />
+                        Edit Bio
+                      </Button>
+                    }
+                  />
                   <Button variant="outline" className="w-full" size="sm">
                     <Edit3 className="h-4 w-4 mr-2" />
                     Edit Profile
@@ -251,7 +287,21 @@ export default function Profile() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label className="text-sm font-medium">Bio</Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Bio</Label>
+                    <BioEditDialog
+                      currentBio={profileData.bio}
+                      onSave={(newBio) => {
+                        setProfileData({...profileData, bio: newBio});
+                        console.log('Bio updated:', newBio);
+                      }}
+                      trigger={
+                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-500 hover:text-gray-700">
+                          <Edit3 className="h-3 w-3" />
+                        </Button>
+                      }
+                    />
+                  </div>
                   <p className="text-sm text-muted-foreground mt-1">{profileData.bio}</p>
                 </div>
                 <div>

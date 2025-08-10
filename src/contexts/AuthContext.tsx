@@ -13,9 +13,11 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   showLoginSuccess: boolean;
+  showLogoutAnimation: boolean;
   signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   hideLoginSuccess: () => void;
+  hideLogoutAnimation: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,6 +34,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [showLoginSuccess, setShowLoginSuccess] = useState(false);
+  const [showLogoutAnimation, setShowLogoutAnimation] = useState(false);
 
   useEffect(() => {
     // Check if Firebase auth is available
@@ -80,11 +83,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       setLoading(true);
-      await signOut(auth);
-      toast.success('Successfully signed out');
+      // Show logout animation before signing out
+      setShowLogoutAnimation(true);
+      
+      // Wait a bit for the animation to start, then sign out
+      setTimeout(async () => {
+        await signOut(auth);
+      }, 500);
+      
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Failed to sign out. Please try again.');
+      setShowLogoutAnimation(false);
     } finally {
       setLoading(false);
     }
@@ -94,13 +104,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setShowLoginSuccess(false);
   };
 
+  const hideLogoutAnimation = () => {
+    setShowLogoutAnimation(false);
+  };
+
   const value = {
     user,
     loading,
     showLoginSuccess,
+    showLogoutAnimation,
     signInWithGoogle,
     logout,
     hideLoginSuccess,
+    hideLogoutAnimation,
   };
 
   return (

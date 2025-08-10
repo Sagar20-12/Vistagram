@@ -1,11 +1,17 @@
 import { DraggableCardBody, DraggableCardContainer } from "./DraggableCard";
 import { Button } from "./ui/button";
-import { Heart, MessageCircle, Share2, MoreHorizontal, Trash2 } from "lucide-react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, Trash2, Copy, Twitter, Facebook, Instagram, Link } from "lucide-react";
 import { useState, useEffect } from "react";
 import CommentSection from "./CommentSection";
 import { deletePost, toggleLike, checkUserLike } from "@/lib/api";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Post {
   id: string;
@@ -15,6 +21,7 @@ interface Post {
   caption: string;
   timestamp: string;
   likes: number;
+  shares: number;
   comments: number;
   commentsList?: Array<{
     id: string;
@@ -35,15 +42,22 @@ export default function VistaPostCardDraggable({ post, onDelete, currentUserId }
   const { user } = useAuth();
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(post.likes);
+  const [shareCount, setShareCount] = useState(post.shares);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
 
   // Check if user has liked this post on component mount
   useEffect(() => {
     if (user && post.id) {
-      checkUserLike(post.id, user.uid)
-        .then(liked => setIsLiked(liked))
-        .catch(error => console.error('Failed to check like status:', error));
+      // For seedPosts, we'll assume they're not liked initially
+      // For real posts from database, check the API
+      if (post.id.startsWith('p')) {
+        setIsLiked(false); // SeedPosts start as not liked
+      } else {
+        checkUserLike(post.id, user.uid)
+          .then(liked => setIsLiked(liked))
+          .catch(error => console.error('Failed to check like status:', error));
+      }
     }
   }, [user, post.id]);
 
@@ -55,14 +69,27 @@ export default function VistaPostCardDraggable({ post, onDelete, currentUserId }
 
     setIsLiking(true);
     try {
-      const result = await toggleLike(post.id, user.uid);
-      setIsLiked(result.liked);
-      setLikeCount(result.likes);
-      
-      if (result.liked) {
-        toast.success('Post liked!');
+      // For seedPosts (which don't exist in database), handle locally
+      if (post.id.startsWith('p')) {
+        setIsLiked(!isLiked);
+        setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
+        
+        if (!isLiked) {
+          toast.success('Post liked!');
+        } else {
+          toast.success('Post unliked');
+        }
       } else {
-        toast.success('Post unliked');
+        // For real posts from database, use API
+        const result = await toggleLike(post.id, user.uid);
+        setIsLiked(result.liked);
+        setLikeCount(result.likes);
+        
+        if (result.liked) {
+          toast.success('Post liked!');
+        } else {
+          toast.success('Post unliked');
+        }
       }
     } catch (error) {
       console.error('Like error:', error);
@@ -111,15 +138,47 @@ export default function VistaPostCardDraggable({ post, onDelete, currentUserId }
     }
   };
 
-  // Handle image URL - if it's a relative URL, prepend the API base URL
+  const handleShare = async (platform: string) => {
+    const postUrl = `${window.location.origin}/post/${post.id}`;
+    const shareText = `Check out this amazing post by ${post.author}: "${post.caption}"`;
+    
+    try {
+      switch (platform) {
+        case 'copy':
+          await navigator.clipboard.writeText(`${shareText}\n${postUrl}`);
+          toast.success('Link copied to clipboard!');
+          break;
+        case 'twitter':
+          const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(postUrl)}`;
+          window.open(twitterUrl, '_blank');
+          break;
+        case 'facebook':
+          const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`;
+          window.open(facebookUrl, '_blank');
+          break;
+        case 'instagram':
+          toast.info('Instagram sharing requires the Instagram app. Please copy the link and share manually.');
+          await navigator.clipboard.writeText(postUrl);
+          break;
+        default:
+          break;
+      }
+      
+      // Increment share count locally
+      setShareCount(prev => prev + 1);
+      toast.success('Post shared successfully!');
+    } catch (error) {
+      console.error('Share error:', error);
+      toast.error('Failed to share post');
+    }
+  };
+
+  // Handle image URL - support both imported assets and actual URLs
   const getImageUrl = (imageUrl: string) => {
     if (!imageUrl) return '';
-    if (imageUrl.startsWith('http')) {
-      return imageUrl;
-    }
-    // If it's a relative URL, prepend the API base URL
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-    return `${API_BASE_URL}${imageUrl}`;
+    // For imported assets in Vite, the import returns the processed URL directly
+    // So we can just return the imageUrl as is
+    return imageUrl;
   };
 
   return (
@@ -127,7 +186,6 @@ export default function VistaPostCardDraggable({ post, onDelete, currentUserId }
       <DraggableCardBody className="bg-white dark:bg-neutral-800 p-0">
         {/* Image */}
         <div className="relative h-64 w-full overflow-hidden bg-gray-100">
-          {console.log('Rendering image with URL:', getImageUrl(post.image))} {/* Debug log */}
           {post.image ? (
             <img
               src={getImageUrl(post.image)}
@@ -196,27 +254,52 @@ export default function VistaPostCardDraggable({ post, onDelete, currentUserId }
           {/* Action Buttons */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-                             <Button
-                 variant="ghost"
-                 size="sm"
-                 onClick={handleLike}
-                 disabled={isLiking}
-                 className={`h-8 w-8 p-0 ${isLiked ? 'text-red-500' : 'text-gray-500'}`}
-               >
-                 <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
-               </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLike}
+                disabled={isLiking}
+                className={`h-8 w-8 p-0 ${isLiked ? 'text-red-500' : 'text-gray-500'}`}
+              >
+                <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
+              </Button>
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-500">
                 <MessageCircle className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-500">
-                <Share2 className="h-4 w-4" />
-              </Button>
+              
+              {/* Share Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-500">
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => handleShare('copy')}>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy Link
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleShare('twitter')}>
+                    <Twitter className="h-4 w-4 mr-2" />
+                    Share on Twitter
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleShare('facebook')}>
+                    <Facebook className="h-4 w-4 mr-2" />
+                    Share on Facebook
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleShare('instagram')}>
+                    <Instagram className="h-4 w-4 mr-2" />
+                    Share on Instagram
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             
-            {/* Like count */}
-            <span className="text-xs text-gray-500 font-medium">
-              {likeCount} likes
-            </span>
+            {/* Like and Share counts */}
+            <div className="flex items-center space-x-4 text-xs text-gray-500">
+              <span className="font-medium">{likeCount} likes</span>
+              <span className="font-medium">{shareCount} shares</span>
+            </div>
           </div>
 
           {/* Comments Section */}

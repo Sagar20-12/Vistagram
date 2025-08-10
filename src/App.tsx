@@ -12,11 +12,12 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import LoginSuccessAnimation from "@/components/LoginSuccessAnimation";
+import LogoutAnimation from "@/components/LogoutAnimation";
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  const { showLoginSuccess, hideLoginSuccess, user } = useAuth();
+  const { showLoginSuccess, hideLoginSuccess, showLogoutAnimation, hideLogoutAnimation, user } = useAuth();
 
   return (
     <TooltipProvider>
@@ -41,6 +42,13 @@ const AppContent = () => {
       <LoginSuccessAnimation
         isVisible={showLoginSuccess}
         onAnimationComplete={hideLoginSuccess}
+        userName={user?.displayName || undefined}
+      />
+      
+      {/* Logout Animation */}
+      <LogoutAnimation
+        isVisible={showLogoutAnimation}
+        onAnimationComplete={hideLogoutAnimation}
         userName={user?.displayName || undefined}
       />
     </TooltipProvider>
