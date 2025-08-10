@@ -22,7 +22,13 @@ let db;
 // Connect to MongoDB
 async function connectToMongoDB() {
   try {
-    console.log('Attempting to connect to MongoDB:', MONGODB_URI);
+    if (!MONGODB_URI || MONGODB_URI === 'mongodb://localhost:27017') {
+      console.log('⚠️ No MongoDB URI provided or using default localhost');
+      console.log('🔄 Server will run without database connection');
+      return;
+    }
+    
+    console.log('Attempting to connect to MongoDB...');
     const client = new MongoClient(MONGODB_URI);
     await client.connect();
     db = client.db(DB_NAME);
@@ -33,8 +39,9 @@ async function connectToMongoDB() {
     const collections = await db.listCollections().toArray();
     console.log('Available collections:', collections.map(c => c.name));
   } catch (error) {
-    console.error('❌ Failed to connect to MongoDB:', error);
-    process.exit(1);
+    console.error('❌ Failed to connect to MongoDB:', error.message);
+    console.log('🔄 Server will continue running without database connection');
+    console.log('💡 Make sure to set MONGODB_URI environment variable in Railway');
   }
 }
 
@@ -813,14 +820,9 @@ async function startServer() {
       }
     });
     
-    // Try to connect to MongoDB in the background
+    // Try to connect to MongoDB in the background (non-blocking)
     setTimeout(async () => {
-      try {
-        await connectToMongoDB();
-      } catch (error) {
-        console.error('⚠️ MongoDB connection failed, but server is running:', error.message);
-        console.log('🔄 Server will continue running without database connection');
-      }
+      await connectToMongoDB();
     }, 1000); // Wait 1 second before trying to connect to MongoDB
     
   } catch (error) {
