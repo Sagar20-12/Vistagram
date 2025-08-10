@@ -2,6 +2,9 @@
 
 A modern photo sharing application built with React, TypeScript, and MongoDB.
 
+<img width="1898" height="758" alt="image" src="https://github.com/user-attachments/assets/6790c353-c240-4ab6-a7c4-3304a7040dbb" />
+
+
 ## Features
 
 - 📸 Photo upload and sharing
@@ -23,12 +26,6 @@ A modern photo sharing application built with React, TypeScript, and MongoDB.
 ## How can I edit this code?
 
 There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/b015dbe9-b4f3-49ca-92e3-f0b2ff1abf14) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
 
 **Use your preferred IDE**
 
@@ -105,14 +102,3 @@ npm run dev:full  # Starts both frontend and backend
 - `DELETE /api/photos/:id` - Delete a photo
 - `GET /api/health` - Health check
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/b015dbe9-b4f3-49ca-92e3-f0b2ff1abf14) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
