@@ -57,16 +57,34 @@ export default function VistaPostCardDraggable({ post }: VistaPostCardDraggableP
     <DraggableCardContainer>
       <DraggableCardBody className="bg-white dark:bg-neutral-800 p-0">
         {/* Image */}
-        <div className="relative h-64 w-full overflow-hidden">
-          <img
-            src={post.image}
-            alt={post.caption}
-            className="h-full w-full object-cover"
-            onError={(e) => {
-              console.error('Failed to load image:', post.image);
-              e.currentTarget.style.display = 'none';
-            }}
-          />
+        <div className="relative h-64 w-full overflow-hidden bg-gray-100">
+          {console.log('Rendering image with URL:', post.image)} {/* Debug log */}
+          {post.image ? (
+            <img
+              src={post.image}
+              alt={post.caption}
+              className="h-full w-full object-cover"
+              onError={(e) => {
+                console.error('Failed to load image:', post.image);
+                // Show a placeholder instead of hiding the image
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+          ) : null}
+          
+          {/* Fallback placeholder if image fails to load or doesn't exist */}
+          <div className={`absolute inset-0 flex items-center justify-center bg-gray-100 ${post.image ? 'hidden' : ''}`}>
+            <div className="text-center text-gray-400">
+              <div className="w-16 h-16 mx-auto mb-2 bg-gray-200 rounded-lg flex items-center justify-center">
+                <span className="text-2xl">📸</span>
+              </div>
+              <p className="text-sm">No image available</p>
+              {post.image && (
+                <p className="text-xs mt-1 text-gray-300">URL: {post.image}</p>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Content */}

@@ -35,7 +35,7 @@ import {
 import VistaPostCardDraggable from '@/components/VistaPostCardDraggable';
 import PhotoGallery from '@/components/PhotoGallery';
 import CameraUploadDialog from '@/components/CameraUploadDialog';
-import { getUserPosts } from '@/lib/api';
+import { getUserPosts, checkServerHealth } from '@/lib/api';
 
 export default function Profile() {
   const { user, logout } = useAuth();
@@ -82,6 +82,15 @@ export default function Profile() {
       loadUserPosts();
     }
   }, [user]);
+
+  // Check server health on component mount
+  useEffect(() => {
+    const checkHealth = async () => {
+      const isHealthy = await checkServerHealth();
+      console.log('Server health check result:', isHealthy);
+    };
+    checkHealth();
+  }, []);
 
   // Listen for photo upload events to refresh posts
   useEffect(() => {

@@ -70,8 +70,17 @@ export default function CameraUploadDialog({
     setIsUploading(true);
     
     try {
+      console.log('Starting upload for user:', user.uid);
+      console.log('File details:', {
+        name: selectedFile.name,
+        size: selectedFile.size,
+        type: selectedFile.type
+      });
+      
       // Upload photo to MongoDB
       const uploadResult = await uploadPhoto(selectedFile, user.uid, caption);
+      
+      console.log('Upload result:', uploadResult);
       
       if (!uploadResult) {
         throw new Error('Upload failed');

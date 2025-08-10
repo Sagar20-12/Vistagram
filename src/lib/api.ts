@@ -126,23 +126,28 @@ export const getUserPosts = async (userId: string): Promise<Array<{
     const posts = await response.json();
     
     // Convert string dates back to Date objects and add full URLs
-    return posts.map((post: any) => ({
-      id: post._id.toString(),
-      photoUrl: `${API_BASE_URL}${post.photoUrl}`,
-      caption: post.caption,
-      location: post.location,
-      createdAt: new Date(post.createdAt),
-      likes: post.likes,
-      shares: post.shares,
-      comments: post.comments,
-      commentsList: post.comments?.map((comment: any) => ({
-        id: comment.id,
-        userId: comment.userId,
-        username: comment.username,
-        text: comment.text,
-        createdAt: new Date(comment.createdAt)
-      })) || []
-    }));
+    return posts.map((post: any) => {
+      const fullPhotoUrl = `${API_BASE_URL}${post.photoUrl}`;
+      console.log('Generated photo URL:', fullPhotoUrl); // Debug log
+      
+      return {
+        id: post._id.toString(),
+        photoUrl: fullPhotoUrl,
+        caption: post.caption,
+        location: post.location,
+        createdAt: new Date(post.createdAt),
+        likes: post.likes,
+        shares: post.shares,
+        comments: post.comments,
+        commentsList: post.comments?.map((comment: any) => ({
+          id: comment.id,
+          userId: comment.userId,
+          username: comment.username,
+          text: comment.text,
+          createdAt: new Date(comment.createdAt)
+        })) || []
+      };
+    });
   } catch (error) {
     console.error('Failed to get user posts:', error);
     return [];
@@ -227,7 +232,9 @@ export const getComments = async (postId: string): Promise<Array<{
 // Health check function
 export const checkServerHealth = async (): Promise<boolean> => {
   try {
+    console.log('Checking server health at:', `${API_BASE_URL}/api/health`);
     const response = await fetch(`${API_BASE_URL}/api/health`);
+    console.log('Server health response:', response.status, response.statusText);
     return response.ok;
   } catch (error) {
     console.error('Server health check failed:', error);
