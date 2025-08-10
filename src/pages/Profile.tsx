@@ -35,12 +35,12 @@ import {
 import VistaPostCardDraggable from '@/components/VistaPostCardDraggable';
 import CameraUploadDialog from '@/components/CameraUploadDialog';
 import BioEditDialog from '@/components/BioEditDialog';
+import ProfileEditDialog from '@/components/ProfileEditDialog';
 import { getUserPosts, getUserLikedPosts, checkServerHealth } from '@/lib/api';
 import { toast } from 'sonner';
 
 export default function Profile() {
   const { user, logout } = useAuth();
-  const [isEditing, setIsEditing] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [userPosts, setUserPosts] = useState<any[]>([]);
   const [likedPosts, setLikedPosts] = useState<any[]>([]);
@@ -132,11 +132,7 @@ export default function Profile() {
     };
   }, []);
 
-  const handleSaveProfile = () => {
-    setIsEditing(false);
-    // Here you would typically save to your backend
-    console.log('Profile updated:', profileData);
-  };
+
 
   const handleLogout = async () => {
     await logout();
@@ -272,10 +268,19 @@ export default function Profile() {
                       </Button>
                     }
                   />
-                  <Button variant="outline" className="w-full" size="sm">
-                    <Edit3 className="h-4 w-4 mr-2" />
-                    Edit Profile
-                  </Button>
+                  <ProfileEditDialog
+                    currentProfile={profileData}
+                    onSave={(newProfile) => {
+                      setProfileData(newProfile);
+                      console.log('Profile updated:', newProfile);
+                    }}
+                    trigger={
+                      <Button variant="outline" className="w-full" size="sm">
+                        <Edit3 className="h-4 w-4 mr-2" />
+                        Edit Profile
+                      </Button>
+                    }
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -526,64 +531,43 @@ export default function Profile() {
                     <CardTitle>Account Settings</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    {/* Profile Settings */}
-                    <div>
-                      <h4 className="font-semibold mb-4">Profile Information</h4>
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="displayName">Display Name</Label>
-                          <Input
-                            id="displayName"
-                            value={profileData.displayName}
-                            onChange={(e) => setProfileData({...profileData, displayName: e.target.value})}
-                            disabled={!isEditing}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="bio">Bio</Label>
-                          <Textarea
-                            id="bio"
-                            value={profileData.bio}
-                            onChange={(e) => setProfileData({...profileData, bio: e.target.value})}
-                            disabled={!isEditing}
-                            rows={3}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="location">Location</Label>
-                          <Input
-                            id="location"
-                            value={profileData.location}
-                            onChange={(e) => setProfileData({...profileData, location: e.target.value})}
-                            disabled={!isEditing}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="website">Website</Label>
-                          <Input
-                            id="website"
-                            value={profileData.website}
-                            onChange={(e) => setProfileData({...profileData, website: e.target.value})}
-                            disabled={!isEditing}
-                          />
-                        </div>
-                        <div className="flex gap-2">
-                          {isEditing ? (
-                            <>
-                              <Button onClick={handleSaveProfile}>Save Changes</Button>
-                              <Button variant="outline" onClick={() => setIsEditing(false)}>
-                                Cancel
-                              </Button>
-                            </>
-                          ) : (
-                            <Button onClick={() => setIsEditing(true)}>
-                              <Edit3 className="h-4 w-4 mr-2" />
-                              Edit Profile
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                                         {/* Profile Settings */}
+                     <div>
+                       <h4 className="font-semibold mb-4">Profile Information</h4>
+                       <div className="space-y-4">
+                         <div>
+                           <Label>Display Name</Label>
+                           <p className="text-sm text-muted-foreground mt-1">{profileData.displayName}</p>
+                         </div>
+                         <div>
+                           <Label>Bio</Label>
+                           <p className="text-sm text-muted-foreground mt-1">{profileData.bio}</p>
+                         </div>
+                         <div>
+                           <Label>Location</Label>
+                           <p className="text-sm text-muted-foreground mt-1">{profileData.location}</p>
+                         </div>
+                         <div>
+                           <Label>Website</Label>
+                           <p className="text-sm text-muted-foreground mt-1">{profileData.website}</p>
+                         </div>
+                         <div className="flex gap-2">
+                           <ProfileEditDialog
+                             currentProfile={profileData}
+                             onSave={(newProfile) => {
+                               setProfileData(newProfile);
+                               console.log('Profile updated:', newProfile);
+                             }}
+                             trigger={
+                               <Button>
+                                 <Edit3 className="h-4 w-4 mr-2" />
+                                 Edit Profile
+                               </Button>
+                             }
+                           />
+                         </div>
+                       </div>
+                     </div>
 
                     <Separator />
 
