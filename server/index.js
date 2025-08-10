@@ -98,6 +98,8 @@ app.get('/api/test/photos', async (req, res) => {
   }
 });
 
+
+
 // Upload photo endpoint with enhanced debugging
 app.post('/api/photos/upload', upload.single('photo'), async (req, res) => {
   try {
@@ -203,100 +205,88 @@ app.post('/api/photos/upload', upload.single('photo'), async (req, res) => {
   }
 });
 
-// Get photo by ID endpoint with enhanced debugging
+// Debug photo endpoint - must be before the photo serving endpoint
+app.get('/api/debug/photo/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log('Debug photo request for ID:', id);
+    
+    if (!db) {
+      return res.json({ error: 'Database not connected' });
+    }
+    
+    if (!ObjectId.isValid(id)) {
+      return res.json({ error: 'Invalid ObjectId format', id });
+    }
+    
+    const photosCollection = db.collection('photos');
+    const objectId = new ObjectId(id);
+    
+    const photo = await photosCollection.findOne(
+      { _id: objectId },
+      { projection: { data: 0 } } // Exclude binary data
+    );
+    
+    if (!photo) {
+      return res.json({ error: 'Photo not found', id });
+    }
+    
+    res.json({
+      found: true,
+      photo: {
+        _id: photo._id.toString(),
+        filename: photo.filename,
+        mimetype: photo.mimetype,
+        userId: photo.userId,
+        size: photo.size,
+        createdAt: photo.createdAt,
+        hasData: !!photo.data
+      }
+    });
+  } catch (error) {
+    console.error('Debug photo error:', error);
+    res.json({ error: error.message });
+  }
+});
+
+// Get photo by ID endpoint - Simplified and reliable
 app.get('/api/photos/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    console.log('\n=== PHOTO REQUEST START ===');
-    console.log('Photo request received at:', new Date().toISOString());
-    console.log('Requested photo ID:', id);
-    console.log('Database connection status:', db ? 'CONNECTED' : 'NOT CONNECTED');
+    console.log('Photo request for ID:', id);
     
     if (!db) {
-      console.log('❌ Database not connected');
       return res.status(500).json({ error: 'Database not connected' });
     }
     
     if (!ObjectId.isValid(id)) {
-      console.log('❌ Invalid ObjectId format:', id);
       return res.status(400).json({ error: 'Invalid photo ID format' });
     }
     
     const photosCollection = db.collection('photos');
-    console.log('Searching for photo in database...');
-    
-    // First, let's see if any photos exist at all
-    const totalPhotos = await photosCollection.countDocuments();
-    console.log('Total photos in database:', totalPhotos);
-    
-    if (totalPhotos === 0) {
-      console.log('⚠️  No photos found in database at all');
-    }
-    
-    // Try to find the specific photo
     const objectId = new ObjectId(id);
-    console.log('Looking for ObjectId:', objectId);
     
-    const photo = await photosCollection.findOne(
-      { _id: objectId },
-      { projection: { data: 1, mimetype: 1, filename: 1, userId: 1, createdAt: 1, size: 1 } }
-    );
+    const photo = await photosCollection.findOne({ _id: objectId });
     
     if (!photo) {
-      console.log('❌ Photo not found in database for ID:', id);
-      
-      // Let's see what photos exist
-      const allPhotos = await photosCollection.find({}, { 
-        projection: { _id: 1, filename: 1, userId: 1, createdAt: 1 } 
-      }).limit(3).toArray();
-      console.log('Sample photos in database:');
-      allPhotos.forEach(p => {
-        console.log(`  - ID: ${p._id}, File: ${p.filename}, User: ${p.userId}, Created: ${p.createdAt}`);
-      });
-      
       return res.status(404).json({ error: 'Photo not found' });
     }
     
-    console.log('✅ Photo found in database!');
-    console.log('Photo details:', { 
-      id: photo._id,
-      filename: photo.filename, 
-      mimetype: photo.mimetype, 
-      userId: photo.userId,
-      size: photo.size,
-      createdAt: photo.createdAt,
-      hasData: !!photo.data,
-      dataSize: photo.data ? photo.data.length : 'NO DATA'
-    });
-    
     if (!photo.data) {
-      console.log('❌ Photo found but no binary data stored');
       return res.status(500).json({ error: 'Photo data missing' });
     }
     
-    if (!Buffer.isBuffer(photo.data)) {
-      console.log('❌ Photo data is not a Buffer:', typeof photo.data);
-      return res.status(500).json({ error: 'Invalid photo data format' });
-    }
-    
-    console.log('Setting response headers...');
-    console.log('- Content-Type:', photo.mimetype);
-    console.log('- Content-Length:', photo.data.length);
-    
-    res.set('Content-Type', photo.mimetype);
-    res.set('Content-Disposition', `inline; filename="${photo.filename}"`);
+    // Set proper headers
+    res.set('Content-Type', photo.mimetype || 'image/jpeg');
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Cache-Control', 'public, max-age=31536000');
     
-    console.log('Sending photo data...');
+    // Send the photo data
     res.send(photo.data);
     
-    console.log('✅ Photo served successfully');
-    console.log('=== PHOTO REQUEST END ===\n');
-    
   } catch (error) {
-    console.error('❌ Get photo error:', error);
-    res.status(500).json({ error: 'Failed to get photo', details: error.message });
+    console.error('Get photo error:', error);
+    res.status(500).json({ error: 'Failed to get photo' });
   }
 });
 

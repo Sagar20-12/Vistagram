@@ -31,16 +31,26 @@ export default function CommentSection({ postId, initialComments = [], alwaysSho
 
   useEffect(() => {
     if (showComments && comments.length === 0) {
-      loadComments();
+      // For non-authenticated users, show initial comments if available
+      if (!user && initialComments.length > 0) {
+        setComments(initialComments);
+      } else {
+        loadComments();
+      }
     }
-  }, [showComments]);
+  }, [showComments, user, initialComments]);
 
   // Load comments immediately if alwaysShow is true
   useEffect(() => {
     if (alwaysShow) {
-      loadComments();
+      // For non-authenticated users, show initial comments if available
+      if (!user && initialComments.length > 0) {
+        setComments(initialComments);
+      } else {
+        loadComments();
+      }
     }
-  }, [alwaysShow]);
+  }, [alwaysShow, user, initialComments]);
 
   const loadComments = async () => {
     try {
@@ -48,6 +58,10 @@ export default function CommentSection({ postId, initialComments = [], alwaysSho
       setComments(fetchedComments);
     } catch (error) {
       console.error('Failed to load comments:', error);
+      // For non-authenticated users, just show initial comments if available
+      if (!user && initialComments.length > 0) {
+        setComments(initialComments);
+      }
     }
   };
 
@@ -123,14 +137,14 @@ export default function CommentSection({ postId, initialComments = [], alwaysSho
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
         >
           <MessageCircle className="h-4 w-4" />
-          {comments.length > 0 ? `${comments.length} comment${comments.length !== 1 ? 's' : ''}` : 'Add comment'}
+          {comments.length > 0 ? `${comments.length} comment${comments.length !== 1 ? 's' : ''}` : (user ? 'Add comment' : 'View comments')}
         </Button>
       )}
 
       {(showComments || alwaysShow) && (
         <div className={`space-y-4 ${alwaysShow ? 'h-full flex flex-col' : ''}`}>
           {/* Add Comment Form */}
-          {user && (
+          {user ? (
             <form onSubmit={handleSubmitComment} className="flex gap-2 p-4 border-b">
               <Avatar className="h-8 w-8">
                 <AvatarImage src={user.photoURL || ''} />
@@ -155,13 +169,19 @@ export default function CommentSection({ postId, initialComments = [], alwaysSho
                 </Button>
               </div>
             </form>
+          ) : (
+            <div className="p-4 border-b bg-gray-50 rounded-lg">
+              <p className="text-sm text-muted-foreground text-center">
+                💬 Sign in to join the conversation and add your comment!
+              </p>
+            </div>
           )}
 
           {/* Comments List */}
           <div className={`space-y-3 ${alwaysShow ? 'flex-1 overflow-y-auto p-4' : ''}`}>
             {comments.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">
-                No comments yet. Be the first to comment!
+                {user ? 'No comments yet. Be the first to comment!' : 'No comments yet. Sign in to be the first to comment!'}
               </p>
             ) : (
               comments.map((comment) => (

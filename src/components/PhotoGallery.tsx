@@ -51,6 +51,7 @@ export default function PhotoGallery({ onPhotoUploaded }: { onPhotoUploaded?: ()
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [likedPhotos, setLikedPhotos] = useState<Set<string>>(new Set());
   const [likingStates, setLikingStates] = useState<Set<string>>(new Set());
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (user) {
@@ -97,6 +98,10 @@ export default function PhotoGallery({ onPhotoUploaded }: { onPhotoUploaded?: ()
             const testResponse = await fetch(photoObjects[0].url);
             console.log('🌐 Photo URL test response:', testResponse.status, testResponse.statusText);
             console.log('🌐 Photo URL test headers:', Object.fromEntries(testResponse.headers.entries()));
+            
+            if (!testResponse.ok) {
+              console.error('❌ Photo URL returned error status:', testResponse.status);
+            }
           } catch (urlError) {
             console.error('❌ Photo URL test failed:', urlError);
           }
@@ -274,10 +279,44 @@ export default function PhotoGallery({ onPhotoUploaded }: { onPhotoUploaded?: ()
     console.error('🖼️ Image failed to load:', photo.url);
     console.error('🖼️ Image error event:', event);
     console.error('🖼️ Photo details:', photo);
+    
+    // Mark this image as having an error
+    setImageErrors(prev => new Set(prev).add(photo.id));
   };
 
   const handleImageLoad = (photo: Photo) => {
     console.log('✅ Image loaded successfully:', photo.url);
+    
+    // Remove from error set if it was previously marked as having an error
+    setImageErrors(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(photo.id);
+      return newSet;
+    });
+  };
+
+  const validateImageUrl = (url: string): boolean => {
+    if (!url) return false;
+    
+    // Check if URL is valid
+    try {
+      new URL(url);
+    } catch {
+      console.error('❌ Invalid URL format:', url);
+      return false;
+    }
+    
+    // Check if it's a supported image format
+    const supportedFormats = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+    const hasValidExtension = supportedFormats.some(format => 
+      url.toLowerCase().includes(format)
+    );
+    
+    if (!hasValidExtension) {
+      console.warn('⚠️ URL may not be an image:', url);
+    }
+    
+    return true;
   };
 
   if (!user) {
@@ -359,10 +398,12 @@ export default function PhotoGallery({ onPhotoUploaded }: { onPhotoUploaded?: ()
           <p className="text-sm">Photos loaded: {photos.length}</p>
           <p className="text-sm">Photos with postId: {photos.filter(p => p.postId).length}</p>
           <p className="text-sm">Photos without postId: {photos.filter(p => !p.postId).length}</p>
+          <p className="text-sm">Images with errors: {imageErrors.size}</p>
           {photos.length > 0 && (
             <div className="mt-2">
               <p className="text-sm font-medium">First photo URL:</p>
               <p className="text-xs font-mono break-all">{photos[0].url}</p>
+              <p className="text-sm">URL Valid: {validateImageUrl(photos[0].url) ? '✅' : '❌'}</p>
               <p className="text-sm">PostId: {photos[0].postId || 'None'}</p>
             </div>
           )}
@@ -373,23 +414,29 @@ export default function PhotoGallery({ onPhotoUploaded }: { onPhotoUploaded?: ()
         {photos.map((photo) => (
           <Card key={photo.id} className="overflow-hidden hover:shadow-lg transition-shadow">
             <div className="relative group">
-              <img
-                src={photo.url}
-                alt={photo.caption || 'Photo'}
-                className="w-full h-48 object-cover"
-                onClick={() => setSelectedPhoto(photo)}
-                onError={(e) => handleImageError(photo, e)}
-                onLoad={() => handleImageLoad(photo)}
-              />
-              
-              {/* Fallback content for broken images */}
-              <div className="absolute inset-0 bg-gray-200 flex items-center justify-center text-gray-500">
-                <div className="text-center">
-                  <div className="text-4xl mb-2">📷</div>
-                  <div className="text-sm">Image not available</div>
-                  <div className="text-xs mt-1 font-mono">{photo.id}</div>
+              {!imageErrors.has(photo.id) && validateImageUrl(photo.url) ? (
+                <img
+                  src={photo.url}
+                  alt={photo.caption || 'Photo'}
+                  className="w-full h-48 object-cover"
+                  onClick={() => setSelectedPhoto(photo)}
+                  onError={(e) => handleImageError(photo, e)}
+                  onLoad={() => handleImageLoad(photo)}
+                />
+              ) : (
+                <div className="w-full h-48 bg-gray-200 flex items-center justify-center text-gray-500">
+                  <div className="text-center">
+                    <div className="text-4xl mb-2">📷</div>
+                    <div className="text-sm">Image not available</div>
+                    <div className="text-xs mt-1 font-mono">{photo.id}</div>
+                    {photo.url && (
+                      <div className="text-xs mt-1 text-gray-400 break-all">
+                        URL: {photo.url.substring(0, 50)}...
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
               
               {/* Overlay with actions */}
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 z-10">
@@ -503,14 +550,23 @@ export default function PhotoGallery({ onPhotoUploaded }: { onPhotoUploaded?: ()
             <div className="flex flex-1 overflow-hidden flex-col lg:flex-row">
               {/* Left Side - Photo */}
               <div className="flex-1 flex items-center justify-center bg-gray-100 p-4 min-h-0">
-                <img
-                  src={selectedPhoto.url}
-                  alt={selectedPhoto.caption || 'Photo'}
-                  className="max-w-full max-h-full object-contain rounded-lg"
-                  onError={(e) => {
-                    console.error('🖼️ Modal image failed to load:', selectedPhoto.url);
-                  }}
-                />
+                {!imageErrors.has(selectedPhoto.id) ? (
+                  <img
+                    src={selectedPhoto.url}
+                    alt={selectedPhoto.caption || 'Photo'}
+                    className="max-w-full max-h-full object-contain rounded-lg"
+                    onError={(e) => handleImageError(selectedPhoto, e)}
+                    onLoad={() => handleImageLoad(selectedPhoto)}
+                  />
+                ) : (
+                  <div className="text-center text-gray-400">
+                    <div className="w-16 h-16 mx-auto mb-2 bg-gray-200 rounded-lg flex items-center justify-center">
+                      <span className="text-2xl">📸</span>
+                    </div>
+                    <p className="text-sm">Image not available</p>
+                    <p className="text-xs mt-1 text-gray-300">ID: {selectedPhoto.id}</p>
+                  </div>
+                )}
               </div>
 
               {/* Right Side - Comments, Likes, Shares */}

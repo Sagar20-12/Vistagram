@@ -417,6 +417,7 @@ export default function Profile() {
                               }}
                               onDelete={handleDeletePost}
                               currentUserId={user?.uid}
+                              disableDrag={true}
                             />
                           ))}
                         </div>
@@ -439,6 +440,7 @@ export default function Profile() {
                               }}
                               onDelete={handleDeletePost}
                               currentUserId={user?.uid}
+                              disableDrag={true}
                             />
                           ))}
                         </div>
@@ -502,6 +504,7 @@ export default function Profile() {
                             commentsList: post.commentsList
                           }}
                           currentUserId={user?.uid}
+                          disableDrag={true}
                         />
                       ))}
                     </div>
