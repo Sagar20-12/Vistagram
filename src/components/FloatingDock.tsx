@@ -8,15 +8,16 @@ import {
   useTransform,
 } from "motion/react";
 import { useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import LoginModal from "./LoginModal";
 
 export default function FloatingDock() {
   const items = [
-    { title: "Home", icon: "🏠", href: "#" },
+    { title: "Home", icon: "🏠", href: "/" },
     { title: "Search", icon: "🔍", href: "#" },
     { title: "Messages", icon: "💬", href: "#" },
     { title: "Notifications", icon: "🔔", href: "#" },
-    { title: "Profile", icon: "👤", href: "#" },
+    { title: "Profile", icon: "👤", href: "/profile" },
   ];
 
   return (
@@ -63,13 +64,13 @@ const FloatingDockMobile = ({
                 }}
                 transition={{ delay: (items.length - 1 - idx) * 0.05 }}
               >
-                <a
-                  href={item.href}
-                  key={item.title}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80 backdrop-blur-md shadow-lg border border-gray-200/50"
-                >
-                  <div className="text-lg">{item.icon}</div>
-                </a>
+                                 <Link
+                   to={item.href}
+                   key={item.title}
+                   className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80 backdrop-blur-md shadow-lg border border-gray-200/50"
+                 >
+                   <div className="text-lg">{item.icon}</div>
+                 </Link>
               </motion.div>
             ))}
           </motion.div>
@@ -163,7 +164,7 @@ function IconContainer({
   const [hovered, setHovered] = useState(false);
 
   return (
-    <a href={href}>
+    <Link to={href}>
       <motion.div
         ref={ref}
         style={{ width, height }}
@@ -197,7 +198,7 @@ function IconContainer({
         >
           {title}
         </motion.div>
-      </motion.div>
-    </a>
-  );
+              </motion.div>
+      </Link>
+    );
 }
