@@ -67,15 +67,21 @@ app.get('/', (req, res) => {
   });
 });
 
-// Health check endpoint
+// Health check endpoint - responds immediately
 app.get('/api/health', (req, res) => {
-  console.log('Health check requested');
-  res.json({ 
+  console.log('Health check requested at:', new Date().toISOString());
+  res.status(200).json({ 
     status: 'ok', 
     message: 'Server is running',
     timestamp: new Date().toISOString(),
-    database: db ? 'connected' : 'disconnected'
+    database: db ? 'connected' : 'disconnected',
+    uptime: process.uptime()
   });
+});
+
+// Simple ping endpoint for basic connectivity
+app.get('/ping', (req, res) => {
+  res.status(200).send('pong');
 });
 
 // Test endpoint to check database and photos
@@ -783,23 +789,40 @@ app.get('/api/users/:userId/liked-posts', async (req, res) => {
 async function startServer() {
   try {
     console.log('🚀 Starting server...');
+    console.log('📋 Environment:', {
+      PORT: PORT,
+      NODE_ENV: process.env.NODE_ENV || 'development',
+      MONGODB_URI: MONGODB_URI ? 'Set' : 'Not set'
+    });
     
     // Start the server first
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`✅ Server running on port ${PORT}`);
-      console.log(`📊 Health check: http://localhost:${PORT}/`);
-      console.log(`📊 API Health check: http://localhost:${PORT}/api/health`);
-      console.log(`🧪 Test endpoint: http://localhost:${PORT}/api/test/photos`);
+      console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+      console.log(`📊 Ping endpoint: http://localhost:${PORT}/ping`);
+      console.log(`📊 Root endpoint: http://localhost:${PORT}/`);
       console.log('🔍 Server is ready to receive requests');
     });
     
+    // Handle server errors
+    server.on('error', (error) => {
+      console.error('❌ Server error:', error);
+      if (error.code === 'EADDRINUSE') {
+        console.error('Port is already in use');
+        process.exit(1);
+      }
+    });
+    
     // Try to connect to MongoDB in the background
-    try {
-      await connectToMongoDB();
-    } catch (error) {
-      console.error('⚠️ MongoDB connection failed, but server is running:', error.message);
-      console.log('🔄 Server will continue running without database connection');
-    }
+    setTimeout(async () => {
+      try {
+        await connectToMongoDB();
+      } catch (error) {
+        console.error('⚠️ MongoDB connection failed, but server is running:', error.message);
+        console.log('🔄 Server will continue running without database connection');
+      }
+    }, 1000); // Wait 1 second before trying to connect to MongoDB
+    
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);
